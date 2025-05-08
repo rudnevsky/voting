@@ -7,6 +7,7 @@ import { VotingTimer } from './components/VotingTimer';
 import { VotingPowerBreakdown } from './components/VotingPowerBreakdown';
 import { MainTabs } from './components/MainTabs';
 import { StatusTabs } from './components/StatusTabs';
+import { VotingModal } from './components/VotingModal';
 
 type DataPoint = {
   id: string;
@@ -34,6 +35,7 @@ function App() {
     availableVotes: 0,
     lockedVotes: 0,
   });
+  const [selectedDataPointForVoting, setSelectedDataPointForVoting] = useState<DataPoint | null>(null);
 
   // Placeholder for FID - replace with actual FID from Farcaster auth
   const fid = 1;
@@ -123,9 +125,84 @@ function App() {
     setFilteredDataPoints(filtered);
   }, [selectedMainTab, selectedStatusTab, dataPoints]);
 
-  const handleVote = async (id: string, direction: 'up' | 'down') => {
-    // TODO: Implement voting functionality with Supabase
-    console.log(`Voting ${direction} for data point ${id}`);
+  // Handler to open the voting modal for a data point
+  const handleOpenVoteModal = (dataPoint: DataPoint) => {
+    setSelectedDataPointForVoting(dataPoint);
+  };
+
+  // Handler to close the voting modal
+  const handleCloseVoteModal = () => {
+    setSelectedDataPointForVoting(null);
+  };
+
+  // Handler for voting
+  const handleVote = async (votes: number) => {
+    if (!selectedDataPointForVoting) return;
+    const prevVotes = selectedDataPointForVoting.user_votes_cast || 0;
+    const change = votes - prevVotes;
+    if (change === 0) {
+      handleCloseVoteModal();
+      return;
+    }
+    setLoading(true);
+    try {
+      // 1. Upsert votes table
+      await supabase.from('votes').upsert({
+        data_point_id: selectedDataPointForVoting.id,
+        fid,
+        votes_cast: votes,
+      }, { onConflict: 'data_point_id,fid' });
+
+      // 2. Update data_points table
+      await supabase.from('data_points').update({
+        total_votes: selectedDataPointForVoting.total_votes + change,
+      }).eq('id', selectedDataPointForVoting.id);
+
+      // 3. Update users table
+      await supabase.from('users').update({
+        locked_votes: userVotingPower.lockedVotes + change,
+        available_votes: userVotingPower.availableVotes - change,
+      }).eq('fid', fid);
+    } catch (err) {
+      console.error('Error updating vote:', err);
+    }
+    setLoading(false);
+    handleCloseVoteModal();
+  };
+
+  // Handler for redeeming
+  const handleRedeem = async (votes: number) => {
+    if (!selectedDataPointForVoting) return;
+    const prevVotes = selectedDataPointForVoting.user_votes_cast || 0;
+    const change = votes - prevVotes;
+    if (change === 0) {
+      handleCloseVoteModal();
+      return;
+    }
+    setLoading(true);
+    try {
+      // 1. Upsert votes table
+      await supabase.from('votes').upsert({
+        data_point_id: selectedDataPointForVoting.id,
+        fid,
+        votes_cast: votes,
+      }, { onConflict: 'data_point_id,fid' });
+
+      // 2. Update data_points table
+      await supabase.from('data_points').update({
+        total_votes: selectedDataPointForVoting.total_votes + change,
+      }).eq('id', selectedDataPointForVoting.id);
+
+      // 3. Update users table
+      await supabase.from('users').update({
+        locked_votes: userVotingPower.lockedVotes + change,
+        available_votes: userVotingPower.availableVotes - change,
+      }).eq('fid', fid);
+    } catch (err) {
+      console.error('Error redeeming vote:', err);
+    }
+    setLoading(false);
+    handleCloseVoteModal();
   };
 
   return (
@@ -154,11 +231,25 @@ function App() {
               <DataPointCard
                 key={dp.id}
                 dataPoint={dp}
-                onVote={handleVote}
+                onVote={() => handleOpenVoteModal(dp)}
                 showUserVotes={selectedMainTab === 1}
               />
             ))}
           </div>
+        )}
+        {/* Voting Modal */}
+        {selectedDataPointForVoting && (
+          <VotingModal
+            isOpen={!!selectedDataPointForVoting}
+            onClose={handleCloseVoteModal}
+            dataPointName={selectedDataPointForVoting.name}
+            maxVotes={userVotingPower.availableVotes + (selectedDataPointForVoting.user_votes_cast || 0)}
+            userVotes={selectedDataPointForVoting.user_votes_cast || 0}
+            availableVotes={userVotingPower.availableVotes}
+            lockedVotes={userVotingPower.lockedVotes}
+            onVote={handleVote}
+            onRedeem={handleRedeem}
+          />
         )}
       </div>
     </div>
