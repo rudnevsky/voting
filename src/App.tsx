@@ -1,6 +1,4 @@
-import { sdk } from "@farcaster/frame-sdk";
-import React, { useEffect, useState } from 'react';
-import { useAccount, useConnect, useSignMessage } from "wagmi";
+import { useEffect, useState } from 'react';
 import { supabase } from './supabaseClient';
 import { DataPointCard } from './components/DataPointCard';
 import { VotingTimer } from './components/VotingTimer';
