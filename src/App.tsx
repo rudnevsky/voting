@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { sdk } from '@farcaster/frame-sdk';
 import { supabase } from './supabaseClient';
 import { DataPointCard } from './components/DataPointCard';
 import { VotingTimer } from './components/VotingTimer';
@@ -38,6 +39,18 @@ function App() {
 
   // Placeholder for FID - replace with actual FID from Farcaster auth
   const fid = 1;
+
+  // Call ready when the app is loaded
+  useEffect(() => {
+    const initApp = async () => {
+      try {
+        await sdk.actions.ready();
+      } catch (error) {
+        console.error('Error calling ready:', error);
+      }
+    };
+    initApp();
+  }, []);
 
   useEffect(() => {
     async function fetchVotingPower() {
