@@ -49,12 +49,14 @@ export const DataPointCard: React.FC<DataPointCardProps> = ({ dataPoint, onVote,
             </>
           )}
         </div>
-        <button
-          onClick={() => onVote(dataPoint.id, 'up')}
-          className="ml-4 px-8 py-2 rounded-2xl border-4 border-purple-300 bg-white text-2xl font-bold text-gray-900 hover:bg-purple-50 transition-all shadow-md"
-        >
-          Vote
-        </button>
+        {dataPoint.status === 'Voting' && (
+          <button
+            onClick={() => onVote(dataPoint.id, 'up')}
+            className="ml-4 px-8 py-2 rounded-2xl border-4 border-purple-300 bg-white text-2xl font-bold text-gray-900 hover:bg-purple-50 transition-all shadow-md"
+          >
+            Vote
+          </button>
+        )}
       </div>
     </div>
   );

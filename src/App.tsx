@@ -20,6 +20,7 @@ type DataPoint = {
   image_url: string;
   user_voted?: boolean;
   user_votes_cast?: number;
+  user_snapshot?: boolean;
 };
 
 function App() {
@@ -78,32 +79,42 @@ function App() {
       }
       let dataPoints = dataPointsData || [];
 
-      // If on My Votes tab, fetch user's votes and merge
-      if (selectedMainTab === 1) {
-        const { data: votesData, error: votesError } = await supabase
-          .from('votes')
-          .select('data_point_id, votes_cast')
-          .eq('fid', fid);
-        if (votesError) {
-          console.error('Error fetching user votes:', votesError.message);
-        }
-        const votesMap = new Map();
-        (votesData || []).forEach(vote => {
-          votesMap.set(vote.data_point_id, vote.votes_cast);
-        });
-        dataPoints = dataPoints.map(dp => ({
-          ...dp,
-          user_votes_cast: votesMap.get(dp.id) || 0,
-          user_voted: votesMap.has(dp.id),
-        }));
-      } else {
-        // For Vote tab, just mark user_voted randomly for demo
-        dataPoints = dataPoints.map(dp => ({
-          ...dp,
-          user_voted: Math.random() > 0.5,
-        }));
+      // Always fetch user's votes and merge
+      const { data: votesData, error: votesError } = await supabase
+        .from('votes')
+        .select('data_point_id, votes_cast')
+        .eq('fid', fid);
+      if (votesError) {
+        console.error('Error fetching user votes:', votesError.message);
       }
-      setDataPoints(dataPoints);
+      const votesMap = new Map();
+      (votesData || []).forEach(vote => {
+        votesMap.set(vote.data_point_id, vote.votes_cast);
+      });
+      dataPoints = dataPoints.map(dp => ({
+        ...dp,
+        user_votes_cast: votesMap.get(dp.id) || 0,
+        user_voted: (votesMap.get(dp.id) || 0) > 0,
+      }));
+
+      // Fetch user's vote_history snapshots for To launch and Launched
+      const { data: historyData, error: historyError } = await supabase
+        .from('vote_history')
+        .select('data_point_id, change_type')
+        .eq('fid', fid)
+        .in('change_type', ['snapshot_to_launch', 'snapshot_to_launched']);
+      if (historyError) {
+        console.error('Error fetching vote history:', historyError.message);
+      }
+      const snapshotMap = new Map();
+      (historyData || []).forEach(hist => {
+        if (!snapshotMap.has(hist.data_point_id)) {
+          snapshotMap.set(hist.data_point_id, []);
+        }
+        snapshotMap.get(hist.data_point_id).push(hist.change_type);
+      });
+
+      setDataPoints(dataPoints.map(dp => ({ ...dp, user_snapshot: snapshotMap.has(dp.id) })));
       setFilteredDataPoints(dataPoints);
       setLoading(false);
     }
@@ -114,11 +125,17 @@ function App() {
   useEffect(() => {
     let filtered = [...dataPoints];
     // Filter by status
-    const statusMap = ['Voting', 'Launched', 'To launch'];
+    const statusMap = ['Voting', 'To launch', 'Launched'];
     filtered = filtered.filter(dp => dp.status === statusMap[selectedStatusTab]);
     // For My Votes tab, only show data points the user has voted for
     if (selectedMainTab === 1) {
-      filtered = filtered.filter(dp => dp.user_voted);
+      if (selectedStatusTab === 0) {
+        // Voting: user_votes_cast > 0
+        filtered = filtered.filter(dp => (dp.user_votes_cast || 0) > 0);
+      } else {
+        // To launch or Launched: user_snapshot is true
+        filtered = filtered.filter(dp => dp.user_snapshot);
+      }
     }
     // Sort by total votes
     filtered.sort((a, b) => b.total_votes - a.total_votes);
@@ -168,6 +185,7 @@ function App() {
     }
     setLoading(false);
     handleCloseVoteModal();
+    window.location.reload();
   };
 
   // Handler for redeeming
@@ -203,6 +221,7 @@ function App() {
     }
     setLoading(false);
     handleCloseVoteModal();
+    window.location.reload();
   };
 
   return (
@@ -232,7 +251,7 @@ function App() {
                 key={dp.id}
                 dataPoint={dp}
                 onVote={() => handleOpenVoteModal(dp)}
-                showUserVotes={selectedMainTab === 1}
+                showUserVotes={selectedMainTab === 1 && selectedStatusTab === 0}
               />
             ))}
           </div>
@@ -243,7 +262,6 @@ function App() {
             isOpen={!!selectedDataPointForVoting}
             onClose={handleCloseVoteModal}
             dataPointName={selectedDataPointForVoting.name}
-            maxVotes={userVotingPower.availableVotes + (selectedDataPointForVoting.user_votes_cast || 0)}
             userVotes={selectedDataPointForVoting.user_votes_cast || 0}
             availableVotes={userVotingPower.availableVotes}
             lockedVotes={userVotingPower.lockedVotes}

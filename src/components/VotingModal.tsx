@@ -4,7 +4,6 @@ interface VotingModalProps {
   isOpen: boolean;
   onClose: () => void;
   dataPointName: string;
-  maxVotes: number;
   userVotes: number;
   availableVotes: number;
   lockedVotes: number;
@@ -16,7 +15,6 @@ export const VotingModal: React.FC<VotingModalProps> = ({
   isOpen,
   onClose,
   dataPointName,
-  maxVotes,
   userVotes,
   availableVotes,
   lockedVotes,
@@ -27,8 +25,10 @@ export const VotingModal: React.FC<VotingModalProps> = ({
 
   if (!isOpen) return null;
 
+  const maxVotes = availableVotes + userVotes;
+
   const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setVoteCount(Number(e.target.value));
+    setVoteCount(Math.max(0, Math.min(maxVotes, Number(e.target.value))));
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
