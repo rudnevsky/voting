@@ -43,6 +43,7 @@ export const VotingModal: React.FC<VotingModalProps> = ({
   // Determine button states
   const isRedeemActive = voteCount < userVotes;
   const isVoteActive = voteCount > userVotes;
+  const isUnchanged = voteCount === userVotes;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">

@@ -1,12 +1,13 @@
-import { useEffect, useState } from 'react';
-import { useAuth } from './contexts/AuthContext';
+import { sdk } from "@farcaster/frame-sdk";
+import React, { useEffect, useState } from 'react';
+import { useAccount, useConnect, useSignMessage } from "wagmi";
 import { supabase } from './supabaseClient';
 import { DataPointCard } from './components/DataPointCard';
+import { VotingTimer } from './components/VotingTimer';
 import { VotingPowerBreakdown } from './components/VotingPowerBreakdown';
 import { MainTabs } from './components/MainTabs';
 import { StatusTabs } from './components/StatusTabs';
 import { VotingModal } from './components/VotingModal';
-import { SignInButton } from './components/SignInButton';
 
 type DataPoint = {
   id: string;
@@ -23,7 +24,6 @@ type DataPoint = {
 };
 
 function App() {
-  const { isAuthenticated, farcasterUser, isLoading: isAuthLoading } = useAuth();
   const [dataPoints, setDataPoints] = useState<DataPoint[]>([]);
   const [filteredDataPoints, setFilteredDataPoints] = useState<DataPoint[]>([]);
   const [loading, setLoading] = useState(true);
@@ -38,8 +38,8 @@ function App() {
   });
   const [selectedDataPointForVoting, setSelectedDataPointForVoting] = useState<DataPoint | null>(null);
 
-  // Use FID from Farcaster user data
-  const fid = farcasterUser?.fid;
+  // Placeholder for FID - replace with actual FID from Farcaster auth
+  const fid = 1;
 
   useEffect(() => {
     async function fetchVotingPower() {
@@ -225,75 +225,50 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="px-4 py-6 sm:px-0">
-          <div className="flex justify-between items-center mb-6">
-            <h1 className="text-3xl font-bold text-gray-900">Voting Platform</h1>
-            <SignInButton />
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="max-w-4xl mx-auto px-4">
+        <h1 className="text-3xl font-bold text-gray-900 mb-8">Data Points</h1>
+        {/* Main Tabs */}
+        <MainTabs selected={selectedMainTab} onChange={setSelectedMainTab} />
+        {/* Voting Power Breakdown or Timer below main tabs */}
+        {selectedMainTab === 1 && <VotingPowerBreakdown {...userVotingPower} />}
+        {selectedMainTab === 0 && <VotingTimer />}
+        {/* Status Tabs */}
+        <StatusTabs selected={selectedStatusTab} onChange={setSelectedStatusTab} />
+        {/* Content */}
+        {loading ? (
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
           </div>
-          
-          {isAuthLoading ? (
-            <div className="text-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
-              <p className="mt-4 text-gray-600">Loading Farcaster profile...</p>
-            </div>
-          ) : isAuthenticated ? (
-            <>
-              {farcasterUser && (
-                <div className="flex items-center gap-4 mb-6">
-                  <img 
-                    src={farcasterUser.pfp} 
-                    alt={farcasterUser.displayName}
-                    className="w-12 h-12 rounded-full"
-                  />
-                  <div>
-                    <h2 className="text-xl font-bold">{farcasterUser.displayName}</h2>
-                    <p className="text-gray-600">@{farcasterUser.username}</p>
-                  </div>
-                </div>
-              )}
-              <VotingPowerBreakdown {...userVotingPower} />
-              <MainTabs selected={selectedMainTab} onChange={setSelectedMainTab} />
-              <StatusTabs selected={selectedStatusTab} onChange={setSelectedStatusTab} />
-              
-              {loading ? (
-                <div className="text-center py-12">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                  {filteredDataPoints.map((dataPoint) => (
-                    <DataPointCard
-                      key={dataPoint.id}
-                      dataPoint={dataPoint}
-                      onVote={() => handleOpenVoteModal(dataPoint)}
-                    />
-                  ))}
-                </div>
-              )}
-              
-              {selectedDataPointForVoting && (
-                <VotingModal
-                  isOpen={true}
-                  onClose={handleCloseVoteModal}
-                  dataPointName={selectedDataPointForVoting.name}
-                  userVotes={selectedDataPointForVoting.user_votes_cast || 0}
-                  availableVotes={userVotingPower.availableVotes}
-                  lockedVotes={userVotingPower.lockedVotes}
-                  onVote={handleVote}
-                  onRedeem={handleRedeem}
-                />
-              )}
-            </>
-          ) : (
-            <div className="text-center py-12">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                Please sign in with Farcaster to access the voting platform
-              </h2>
-            </div>
-          )}
-        </div>
+        ) : filteredDataPoints.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-gray-500">No data points found</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {filteredDataPoints.map((dp) => (
+              <DataPointCard
+                key={dp.id}
+                dataPoint={dp}
+                onVote={() => handleOpenVoteModal(dp)}
+                showUserVotes={selectedMainTab === 1 && selectedStatusTab === 0}
+              />
+            ))}
+          </div>
+        )}
+        {/* Voting Modal */}
+        {selectedDataPointForVoting && (
+          <VotingModal
+            isOpen={!!selectedDataPointForVoting}
+            onClose={handleCloseVoteModal}
+            dataPointName={selectedDataPointForVoting.name}
+            userVotes={selectedDataPointForVoting.user_votes_cast || 0}
+            availableVotes={userVotingPower.availableVotes}
+            lockedVotes={userVotingPower.lockedVotes}
+            onVote={handleVote}
+            onRedeem={handleRedeem}
+          />
+        )}
       </div>
     </div>
   );
