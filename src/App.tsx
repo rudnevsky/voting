@@ -1,15 +1,12 @@
-import { sdk } from "@farcaster/frame-sdk";
-import React, { useEffect, useState } from 'react';
-import { useAccount, useConnect, useSignMessage } from "wagmi";
+import { useEffect, useState } from 'react';
+import { useAuth } from './contexts/AuthContext';
 import { supabase } from './supabaseClient';
 import { DataPointCard } from './components/DataPointCard';
-import { VotingTimer } from './components/VotingTimer';
 import { VotingPowerBreakdown } from './components/VotingPowerBreakdown';
 import { MainTabs } from './components/MainTabs';
 import { StatusTabs } from './components/StatusTabs';
 import { VotingModal } from './components/VotingModal';
 import { SignInButton } from './components/SignInButton';
-import { useAuth } from './contexts/AuthContext';
 
 type DataPoint = {
   id: string;
@@ -26,7 +23,7 @@ type DataPoint = {
 };
 
 function App() {
-  const { isAuthenticated, address, farcasterUser, isLoading: isAuthLoading } = useAuth();
+  const { isAuthenticated, farcasterUser, isLoading: isAuthLoading } = useAuth();
   const [dataPoints, setDataPoints] = useState<DataPoint[]>([]);
   const [filteredDataPoints, setFilteredDataPoints] = useState<DataPoint[]>([]);
   const [loading, setLoading] = useState(true);
