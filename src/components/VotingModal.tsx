@@ -40,6 +40,11 @@ export const VotingModal: React.FC<VotingModalProps> = ({
     setVoteCount(maxVotes);
   };
 
+  // Determine button states
+  const isRedeemActive = voteCount < userVotes;
+  const isVoteActive = voteCount > userVotes;
+  const isUnchanged = voteCount === userVotes;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
       <div className="bg-white rounded-2xl p-8 shadow-xl w-full max-w-md relative">
@@ -62,13 +67,14 @@ export const VotingModal: React.FC<VotingModalProps> = ({
             className="w-20 text-xl font-bold text-center border rounded-lg p-1"
           />
           <span className="text-lg font-bold text-gray-500">
-            Max / {maxVotes}
-            <button
-              className="ml-2 px-2 py-1 bg-gray-200 rounded text-sm font-bold hover:bg-gray-300"
+            <span
+              className="cursor-pointer select-none hover:text-purple-600 transition-colors underline"
               onClick={handleMax}
+              title="Set to max votes"
             >
               Max
-            </button>
+            </span>
+            {' / '}{maxVotes}
           </span>
         </div>
         <input
@@ -89,15 +95,24 @@ export const VotingModal: React.FC<VotingModalProps> = ({
         </div>
         <div className="flex gap-4">
           <button
-            className={`flex-1 py-3 rounded-xl text-2xl font-bold border-2 ${userVotes === 0 ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed' : 'bg-white text-gray-700 border-gray-400 hover:bg-gray-50'}`}
+            className={`flex-1 py-3 rounded-xl text-2xl font-bold border-2 transition-all ${
+              isRedeemActive
+                ? 'bg-red-100 text-red-700 border-red-400 hover:bg-red-200'
+                : 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
+            }`}
             onClick={() => onRedeem(voteCount)}
-            disabled={userVotes === 0}
+            disabled={!isRedeemActive}
           >
             Redeem
           </button>
           <button
-            className="flex-1 py-3 rounded-xl text-2xl font-bold border-2 bg-purple-100 text-purple-700 border-purple-300 hover:bg-purple-200"
+            className={`flex-1 py-3 rounded-xl text-2xl font-bold border-2 transition-all ${
+              isVoteActive
+                ? 'bg-purple-100 text-purple-700 border-purple-400 hover:bg-purple-200'
+                : 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
+            }`}
             onClick={() => onVote(voteCount)}
+            disabled={!isVoteActive}
           >
             Vote
           </button>
