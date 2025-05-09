@@ -10,8 +10,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@farcaster/frame-sdk": "latest",
-    "@farcaster/frame-wagmi-connector": "latest",
+    "@farcaster/core": "^0.16.4",
+    "@farcaster/frame-sdk": "^0.0.38",
+    "@farcaster/frame-wagmi-connector": "^0.0.26",
     "@headlessui/react": "^2.2.2",
     "@heroicons/react": "^2.2.0",
     "@supabase/supabase-js": "^2.49.4",
