@@ -297,16 +297,10 @@ function App() {
         <MainTabs selected={selectedMainTab} onChange={setSelectedMainTab} />
         {/* Voting Power Breakdown or Timer below main tabs */}
         {selectedMainTab === 0 ? (
-          <div className="bg-white border-4 border-gray-300 rounded-2xl p-6 mb-6">
-            <div className="grid grid-cols-2 gap-x-4 gap-y-2 items-center">
-              <span className="font-bold text-xl font-hand">Your Builder Score</span>
-              <span className="text-2xl font-extrabold text-right font-hand">{userVotingPower.builderScore}</span>
-            </div>
-          </div>
+          <VotingTimer />
         ) : (
           <VotingPowerBreakdown {...userVotingPower} />
         )}
-        {selectedMainTab === 0 && <VotingTimer />}
         {/* Status Tabs */}
         <StatusTabs selected={selectedStatusTab} onChange={setSelectedStatusTab} />
         {/* Content */}
