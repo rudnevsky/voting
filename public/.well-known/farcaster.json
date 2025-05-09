@@ -1,8 +1,8 @@
 {
   "name": "Voting App",
   "description": "Vote for your favorite data points",
-  "url": "https://voting-ten-self.vercel.app",
-  "icon": "https://voting-ten-self.vercel.app/og-image.png",
-  "splashBackgroundImageUrl": "https://voting-ten-self.vercel.app/og-image.png",
-  "frameUrl": "https://voting-ten-self.vercel.app"
+  "url": "https://newvoting.vercel.app",
+  "icon": "https://newvoting.vercel.app/og-image.png",
+  "splashBackgroundImageUrl": "https://newvoting.vercel.app/og-image.png",
+  "frameUrl": "https://newvoting.vercel.app"
 }
