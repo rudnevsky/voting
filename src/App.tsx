@@ -84,28 +84,37 @@ function App() {
       }
       console.log('Fetching voting power for FID:', viewer.fid);
       
-      // Fetch builder score from Talent Protocol
-      const builderScore = await talentProtocolApi.getBuilderScore(viewer.fid);
-      console.log('Builder score from Talent Protocol:', builderScore);
+      try {
+        // Fetch builder score from Talent Protocol
+        const builderScore = await talentProtocolApi.getBuilderScore(viewer.fid);
+        console.log('Builder score from Talent Protocol:', builderScore);
 
-      // Fetch other voting power data from Supabase
-      const { data, error } = await supabase
-        .from('users')
-        .select('talent_holdings, total_voting_power, available_votes, locked_votes')
-        .eq('fid', viewer.fid)
-        .single();
-      
-      if (error) {
-        console.error('Error fetching voting power:', error.message);
-      } else if (data) {
-        console.log('Voting power data:', data);
-        setUserVotingPower({
-          builderScore,
-          talentHoldings: data.talent_holdings,
-          totalVotingPower: data.total_voting_power,
-          availableVotes: data.available_votes,
-          lockedVotes: data.locked_votes,
-        });
+        // Fetch other voting power data from Supabase
+        const { data, error } = await supabase
+          .from('users')
+          .select('talent_holdings, total_voting_power, available_votes, locked_votes')
+          .eq('fid', viewer.fid)
+          .single();
+        
+        if (error) {
+          console.error('Error fetching voting power from Supabase:', error.message);
+          // Still update with builder score even if Supabase fails
+          setUserVotingPower(prev => ({
+            ...prev,
+            builderScore,
+          }));
+        } else if (data) {
+          console.log('Voting power data from Supabase:', data);
+          setUserVotingPower({
+            builderScore,
+            talentHoldings: data.talent_holdings,
+            totalVotingPower: data.total_voting_power,
+            availableVotes: data.available_votes,
+            lockedVotes: data.locked_votes,
+          });
+        }
+      } catch (error) {
+        console.error('Error in fetchVotingPower:', error);
       }
     }
     fetchVotingPower();
@@ -287,7 +296,7 @@ function App() {
         {/* Main Tabs */}
         <MainTabs selected={selectedMainTab} onChange={setSelectedMainTab} />
         {/* Voting Power Breakdown or Timer below main tabs */}
-        {selectedMainTab === 1 && <VotingPowerBreakdown {...userVotingPower} />}
+        <VotingPowerBreakdown {...userVotingPower} />
         {selectedMainTab === 0 && <VotingTimer />}
         {/* Status Tabs */}
         <StatusTabs selected={selectedStatusTab} onChange={setSelectedStatusTab} />
