@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { sdk } from '@farcaster/frame-sdk';
 import { supabase } from './supabaseClient';
+import { talentProtocolApi } from './api/talentProtocol';
 import { DataPointCard } from './components/DataPointCard';
 import { VotingTimer } from './components/VotingTimer';
 import { VotingPowerBreakdown } from './components/VotingPowerBreakdown';
@@ -82,17 +83,24 @@ function App() {
         return;
       }
       console.log('Fetching voting power for FID:', viewer.fid);
+      
+      // Fetch builder score from Talent Protocol
+      const builderScore = await talentProtocolApi.getBuilderScore(viewer.fid);
+      console.log('Builder score from Talent Protocol:', builderScore);
+
+      // Fetch other voting power data from Supabase
       const { data, error } = await supabase
         .from('users')
-        .select('builder_score, talent_holdings, total_voting_power, available_votes, locked_votes')
+        .select('talent_holdings, total_voting_power, available_votes, locked_votes')
         .eq('fid', viewer.fid)
         .single();
+      
       if (error) {
         console.error('Error fetching voting power:', error.message);
       } else if (data) {
         console.log('Voting power data:', data);
         setUserVotingPower({
-          builderScore: data.builder_score,
+          builderScore,
           talentHoldings: data.talent_holdings,
           totalVotingPower: data.total_voting_power,
           availableVotes: data.available_votes,
