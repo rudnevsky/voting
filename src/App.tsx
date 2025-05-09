@@ -56,13 +56,13 @@ function App() {
         const context = await sdk.context as any;
         console.log('Context data:', context);
         
-        if (context?.fid) {
-          console.log('✅ Successfully fetched FID:', context.fid);
+        if (context?.user?.fid) {
+          console.log('✅ Successfully fetched FID:', context.user.fid);
           setViewer({
-            fid: context.fid,
-            username: context.username || '',
-            displayName: context.displayName || '',
-            avatar: context.pfp?.url || '',
+            fid: context.user.fid,
+            username: context.user.username || '',
+            displayName: context.user.displayName || '',
+            avatar: context.user.pfpUrl || '',
           });
         } else {
           console.log('❌ Failed to fetch FID - no FID found in context data');
