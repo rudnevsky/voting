@@ -22,6 +22,13 @@ type DataPoint = {
   user_snapshot?: boolean;
 };
 
+type Viewer = {
+  fid: number;
+  username: string;
+  displayName: string;
+  avatar: string;
+};
+
 function App() {
   const [dataPoints, setDataPoints] = useState<DataPoint[]>([]);
   const [filteredDataPoints, setFilteredDataPoints] = useState<DataPoint[]>([]);
@@ -36,17 +43,32 @@ function App() {
     lockedVotes: 0,
   });
   const [selectedDataPointForVoting, setSelectedDataPointForVoting] = useState<DataPoint | null>(null);
+  const [viewer, setViewer] = useState<Viewer | null>(null);
 
-  // Placeholder for FID - replace with actual FID from Farcaster auth
-  const fid = 1;
-
-  // Call ready when the app is loaded
+  // Call ready and get viewer data when the app is loaded
   useEffect(() => {
     const initApp = async () => {
       try {
+        console.log('Initializing app and getting viewer data...');
         await sdk.actions.ready();
+        
+        // Get viewer data from the frame context
+        const context = await sdk.context as any;
+        console.log('Context data:', context);
+        
+        if (context?.fid) {
+          console.log('✅ Successfully fetched FID:', context.fid);
+          setViewer({
+            fid: context.fid,
+            username: context.username || '',
+            displayName: context.displayName || '',
+            avatar: context.pfp?.url || '',
+          });
+        } else {
+          console.log('❌ Failed to fetch FID - no FID found in context data');
+        }
       } catch (error) {
-        console.error('Error calling ready:', error);
+        console.error('Error initializing app:', error);
       }
     };
     initApp();
@@ -54,15 +76,20 @@ function App() {
 
   useEffect(() => {
     async function fetchVotingPower() {
-      if (!fid) return;
+      if (!viewer?.fid) {
+        console.log('No viewer FID available, skipping voting power fetch');
+        return;
+      }
+      console.log('Fetching voting power for FID:', viewer.fid);
       const { data, error } = await supabase
         .from('users')
         .select('builder_score, talent_holdings, total_voting_power, available_votes, locked_votes')
-        .eq('fid', fid)
+        .eq('fid', viewer.fid)
         .single();
       if (error) {
         console.error('Error fetching voting power:', error.message);
       } else if (data) {
+        console.log('Voting power data:', data);
         setUserVotingPower({
           builderScore: data.builder_score,
           talentHoldings: data.talent_holdings,
@@ -73,10 +100,11 @@ function App() {
       }
     }
     fetchVotingPower();
-  }, [fid]);
+  }, [viewer?.fid]);
 
   useEffect(() => {
     async function fetchData() {
+      if (!viewer?.fid) return;
       setLoading(true);
       // Fetch all data points
       const { data: dataPointsData, error: dataPointsError } = await supabase
@@ -94,7 +122,7 @@ function App() {
       const { data: votesData, error: votesError } = await supabase
         .from('votes')
         .select('data_point_id, votes_cast')
-        .eq('fid', fid);
+        .eq('fid', viewer.fid);
       if (votesError) {
         console.error('Error fetching user votes:', votesError.message);
       }
@@ -112,7 +140,7 @@ function App() {
       const { data: historyData, error: historyError } = await supabase
         .from('vote_history')
         .select('data_point_id, change_type')
-        .eq('fid', fid)
+        .eq('fid', viewer.fid)
         .in('change_type', ['snapshot_to_launch', 'snapshot_to_launched']);
       if (historyError) {
         console.error('Error fetching vote history:', historyError.message);
@@ -130,8 +158,7 @@ function App() {
       setLoading(false);
     }
     fetchData();
-    // Re-fetch when switching tabs
-  }, [selectedMainTab, fid]);
+  }, [selectedMainTab, viewer?.fid]);
 
   useEffect(() => {
     let filtered = [...dataPoints];
@@ -177,7 +204,7 @@ function App() {
       // 1. Upsert votes table
       await supabase.from('votes').upsert({
         data_point_id: selectedDataPointForVoting.id,
-        fid,
+        fid: viewer?.fid,
         votes_cast: votes,
       }, { onConflict: 'data_point_id,fid' });
 
@@ -190,7 +217,7 @@ function App() {
       await supabase.from('users').update({
         locked_votes: userVotingPower.lockedVotes + change,
         available_votes: userVotingPower.availableVotes - change,
-      }).eq('fid', fid);
+      }).eq('fid', viewer?.fid);
     } catch (err) {
       console.error('Error updating vote:', err);
     }
@@ -213,7 +240,7 @@ function App() {
       // 1. Upsert votes table
       await supabase.from('votes').upsert({
         data_point_id: selectedDataPointForVoting.id,
-        fid,
+        fid: viewer?.fid,
         votes_cast: votes,
       }, { onConflict: 'data_point_id,fid' });
 
@@ -226,7 +253,7 @@ function App() {
       await supabase.from('users').update({
         locked_votes: userVotingPower.lockedVotes + change,
         available_votes: userVotingPower.availableVotes - change,
-      }).eq('fid', fid);
+      }).eq('fid', viewer?.fid);
     } catch (err) {
       console.error('Error redeeming vote:', err);
     }
