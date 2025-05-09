@@ -7,6 +7,7 @@ import { VotingPowerBreakdown } from './components/VotingPowerBreakdown';
 import { MainTabs } from './components/MainTabs';
 import { StatusTabs } from './components/StatusTabs';
 import { VotingModal } from './components/VotingModal';
+import { UserProfile } from './components/UserProfile';
 
 type DataPoint = {
   id: string;
@@ -265,7 +266,16 @@ function App() {
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-4xl mx-auto px-4">
-        <h1 className="text-3xl font-bold text-gray-900 mb-8">Data Points</h1>
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-3xl font-bold text-gray-900">Data Points</h1>
+          {viewer && (
+            <UserProfile
+              username={viewer.username}
+              displayName={viewer.displayName}
+              avatar={viewer.avatar}
+            />
+          )}
+        </div>
         {/* Main Tabs */}
         <MainTabs selected={selectedMainTab} onChange={setSelectedMainTab} />
         {/* Voting Power Breakdown or Timer below main tabs */}
