@@ -30,7 +30,7 @@ export const VotingPowerBreakdown: React.FC<VotingPowerBreakdownProps> = ({
         <span className="text-lg font-hand">• Locked {lockedVotes}</span>
       </div>
       <div className="bg-gray-100 border-2 border-gray-300 rounded-xl px-4 py-2 mt-2">
-        <span className="font-hand text-lg">Total Voting Power = Builder Score x sqrt($TALENT Holdings)</span>
+        <span className="font-hand text-lg">Total Voting Power = Builder Score + $TALENT Holdings</span>
       </div>
     </div>
   );
